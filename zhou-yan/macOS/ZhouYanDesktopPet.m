@@ -39,6 +39,7 @@ typedef NS_ENUM(NSInteger, PetState) {
 @property(nonatomic) NSInteger idleLoopsCompleted;
 @property(nonatomic) NSInteger idleSequenceIndex;
 @property(nonatomic) NSInteger actionLoopsCompleted;
+@property(nonatomic) BOOL fixedSequenceAction;
 @property(nonatomic) NSInteger hoverRapCount;
 @property(nonatomic) NSTimeInterval dragSeconds;
 @property(nonatomic) BOOL angerAfterAction;
@@ -176,24 +177,30 @@ typedef NS_ENUM(NSInteger, PetState) {
     self.idleLoopsCompleted = 0;
     self.idleSequenceIndex = 0;
     self.actionLoopsCompleted = 0;
+    self.fixedSequenceAction = NO;
     [self.view setNeedsDisplay:YES];
 }
 - (void)startState:(PetState)state {
     self.state = state; self.frame = 0; self.actionFramesPlayed = 0; self.actionLoopsCompleted = 0; self.stateStarted = [self now];
+    self.fixedSequenceAction = NO;
     [self.view setNeedsDisplay:YES];
 }
 - (BOOL)isIdleSequenceState:(PetState)state {
-    return state == PetWaving || state == PetJumping || state == PetReview || state == PetFailed;
+    return state == PetJumping || state == PetReview || state == PetRunningRight || state == PetFailed;
+}
+- (void)startFixedSequenceState:(PetState)state {
+    [self startState:state];
+    self.fixedSequenceAction = YES;
 }
 - (void)startNextIdleSequenceAction {
-    NSArray *sequence = @[@(PetWaving), @(PetJumping), @(PetReview), @(PetFailed)];
+    NSArray *sequence = @[@(PetJumping), @(PetReview), @(PetRunningRight), @(PetFailed)];
     if (self.idleSequenceIndex >= sequence.count) {
         [self enterIdle];
         return;
     }
     PetState next = (PetState)[sequence[self.idleSequenceIndex] integerValue];
     self.idleSequenceIndex++;
-    [self startState:next];
+    [self startFixedSequenceState:next];
 }
 - (void)finishAction {
     if (self.angerAfterAction) { self.angerAfterAction = NO; [self startState:PetAngry]; }
@@ -257,7 +264,7 @@ typedef NS_ENUM(NSInteger, PetState) {
                 self.idleLoopsCompleted++;
             }
             self.stateStarted = now;
-            if (self.idleLoopsCompleted >= 6 && outsideDistance > GazeMargin) {
+            if (self.idleLoopsCompleted >= 4 && outsideDistance > GazeMargin) {
                 [self startNextIdleSequenceAction];
             } else {
                 [self.view setNeedsDisplay:YES];
@@ -277,7 +284,7 @@ typedef NS_ENUM(NSInteger, PetState) {
             self.actionLoopsCompleted++;
         }
         self.frame = self.frame % [self frameCount];
-        if ([self isIdleSequenceState:self.state] && self.actionLoopsCompleted >= 3) {
+        if (self.fixedSequenceAction && [self isIdleSequenceState:self.state] && self.actionLoopsCompleted >= 2) {
             if (self.angerAfterAction) { self.angerAfterAction = NO; [self startState:PetAngry]; }
             else [self startNextIdleSequenceAction];
         } else {
@@ -318,7 +325,7 @@ typedef NS_ENUM(NSInteger, PetState) {
         if (self.dragSeconds > 7.0) {
             self.dragSeconds = 0;
             self.idleSequenceIndex = 4;
-            [self startState:PetFailed];
+            [self startFixedSequenceState:PetFailed];
             return;
         }
         [self finishAction];

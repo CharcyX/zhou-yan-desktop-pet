@@ -12,7 +12,7 @@
 - 桌宠显示按 1.5 倍高 DPI 比例渲染，并将脚底对齐到工作区底边。
 - 红线悬停区内持续循环说唱；蓝线到红线之间的 60 px 环形区域按鼠标位置播放 16 方向注视；蓝线外不触发注视。
 - 鼠标离开悬停区后回到 idle。
-- idle 先完整循环 6 次，再按 waving → jumping → review → failed 的固定顺序播放；每个动作完整循环 3 次，然后回到 idle。
+- idle 先完整循环 4 次，再按 jumping → review → running → failed 的固定顺序播放；每个动作完整循环 2 次，然后回到 idle。固定序列中的 running 复用 running-right 帧，不移动窗口。
 - 左右拖拽累计超过 7 秒后播放 failed。
 - 右键宠物或按 Esc 退出。
 

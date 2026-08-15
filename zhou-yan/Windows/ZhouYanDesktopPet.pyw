@@ -38,6 +38,7 @@ class ZhouYanPet:
         self.idle_loops_completed = 0
         self.idle_sequence_index = 0
         self.action_loops_completed = 0
+        self.fixed_sequence_action = False
         self.started = time.monotonic()
         self.hover_active = False
         self.hover_count = 0
@@ -87,6 +88,7 @@ class ZhouYanPet:
         self.idle_loops_completed = 0
         self.idle_sequence_index = 0
         self.action_loops_completed = 0
+        self.fixed_sequence_action = False
         self.draw()
 
     def start(self, state):
@@ -94,19 +96,24 @@ class ZhouYanPet:
         self.action_frames_played = 0
         self.action_loops_completed = 0
         self.started = time.monotonic()
+        self.fixed_sequence_action = False
         self.draw()
 
     def is_idle_sequence_state(self):
-        return self.state in ("waving", "jumping", "review", "failed")
+        return self.state in ("jumping", "review", "running-right", "failed")
+
+    def start_fixed_sequence_state(self, state):
+        self.start(state)
+        self.fixed_sequence_action = True
 
     def start_next_idle_action(self):
-        sequence = ("waving", "jumping", "review", "failed")
+        sequence = ("jumping", "review", "running-right", "failed")
         if self.idle_sequence_index >= len(sequence):
             self.enter_idle()
             return
         state = sequence[self.idle_sequence_index]
         self.idle_sequence_index += 1
-        self.start(state)
+        self.start_fixed_sequence_state(state)
 
     def frame_count(self):
         return {"idle": 6, "rap": 5, "singing": 5, "waving": 4, "jumping": 5, "waiting": 6,
@@ -198,7 +205,7 @@ class ZhouYanPet:
                     self.frame = 0
                     self.idle_loops_completed += 1
                 self.started = now
-                if self.idle_loops_completed >= 6 and distance > GAZE_MARGIN:
+                if self.idle_loops_completed >= 4 and distance > GAZE_MARGIN:
                     self.start_next_idle_action()
                 else:
                     self.draw()
@@ -214,7 +221,7 @@ class ZhouYanPet:
             if self.frame >= self.frame_count():
                 self.action_loops_completed += 1
             self.frame %= self.frame_count()
-            if self.is_idle_sequence_state() and self.action_loops_completed >= 3:
+            if self.fixed_sequence_action and self.is_idle_sequence_state() and self.action_loops_completed >= 2:
                 if self.anger_after_action:
                     self.anger_after_action = False
                     self.start("angry")
@@ -254,7 +261,7 @@ class ZhouYanPet:
             if self.drag_seconds > 7:
                 self.drag_seconds = 0
                 self.idle_sequence_index = 4
-                self.start("failed")
+                self.start_fixed_sequence_state("failed")
                 return
             self.finish_action()
 
