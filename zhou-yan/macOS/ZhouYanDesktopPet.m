@@ -7,7 +7,8 @@ static const CGFloat WindowW = CellW * PetScale;
 static const CGFloat WindowH = CellH * PetScale;
 static const NSInteger Columns = 8;
 static const NSInteger Rows = 11;
-static const NSTimeInterval FrameStep = 0.14;
+static const NSTimeInterval FrameStep = 0.20;
+static const NSTimeInterval IdleFrameStep = 0.22;
 static const CGFloat GazeMargin = 60.0;
 static const CGFloat GazeAnchorY = 0.73;
 static const CGFloat GazeHysteresis = 4.0;
@@ -64,6 +65,8 @@ typedef NS_ENUM(NSInteger, PetState) {
     [super drawRect:dirtyRect];
     PetController *c = self.controller;
     if (!c.atlas) return;
+    [[NSColor clearColor] set];
+    NSRectFillUsingOperation(self.bounds, NSCompositingOperationClear);
     [NSGraphicsContext currentContext].imageInterpolation = NSImageInterpolationNone;
     NSInteger index = [c atlasIndex];
     NSInteger col = index % Columns;
@@ -259,7 +262,7 @@ typedef NS_ENUM(NSInteger, PetState) {
     }
 
     if (self.state == PetIdle) {
-        if (now - self.stateStarted >= 0.18) {
+        if (now - self.stateStarted >= IdleFrameStep) {
             self.frame++;
             if (self.frame >= [self frameCount]) {
                 self.frame = 0;

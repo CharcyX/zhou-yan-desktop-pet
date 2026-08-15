@@ -12,6 +12,8 @@ GAZE_MARGIN = 60
 GAZE_ANCHOR_Y = 0.30
 GAZE_HYSTERESIS = 4.0
 KEY = "#D12AFF"
+FRAME_STEP = 0.20
+IDLE_FRAME_STEP = 0.22
 
 
 class ZhouYanPet:
@@ -200,7 +202,7 @@ class ZhouYanPet:
                 self.enter_idle()
 
         if self.state == "idle":
-            if now - self.started >= 0.18:
+            if now - self.started >= IDLE_FRAME_STEP:
                 self.frame += 1
                 if self.frame >= self.frame_count():
                     self.frame = 0
@@ -210,12 +212,12 @@ class ZhouYanPet:
                     self.start_next_idle_action()
                 else:
                     self.draw()
-        elif self.state == "rap" and now - self.started >= 0.14:
+        elif self.state == "rap" and now - self.started >= FRAME_STEP:
             if inside and not self.dragging:
                 self.frame = (self.frame + 1) % self.frame_count()
                 self.started = now
                 self.draw()
-        elif self.state != "gaze" and now - self.started >= 0.14:
+        elif self.state != "gaze" and now - self.started >= FRAME_STEP:
             self.frame += 1
             self.action_frames_played += 1
             self.started = now
