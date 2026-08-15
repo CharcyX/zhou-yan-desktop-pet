@@ -155,7 +155,7 @@ typedef NS_ENUM(NSInteger, PetState) {
         case PetReview: return 8 * Columns + self.frame;
         case PetRunningRight: return 1 * Columns + self.frame;
         case PetRunningLeft: return 2 * Columns + self.frame;
-        case PetRunning: return 7 * Columns + self.frame;
+        case PetRunning: return 3 * Columns + self.frame;
         case PetAngry: return 7 * Columns + self.frame;
         case PetGaze: return self.frame < 8 ? 9 * Columns + self.frame : 10 * Columns + self.frame - 8;
     }

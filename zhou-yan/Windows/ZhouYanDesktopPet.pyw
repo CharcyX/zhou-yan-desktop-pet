@@ -126,7 +126,7 @@ class ZhouYanPet:
         if self.state == "idle": return self.frame
         if self.state == "running-right": return 8 + self.frame
         if self.state == "running-left": return 16 + self.frame
-        if self.state == "running": return 56 + self.frame
+        if self.state == "running": return 24 + self.frame
         if self.state in ("rap", "singing"): return 32 + self.frame
         if self.state == "waving": return 24 + self.frame
         if self.state == "jumping": return 32 + self.frame
