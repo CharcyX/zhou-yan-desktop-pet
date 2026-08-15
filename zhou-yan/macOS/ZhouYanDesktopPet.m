@@ -14,7 +14,7 @@ static const CGFloat GazeHysteresis = 4.0;
 static const CGFloat DockGap = -70.0;
 
 typedef NS_ENUM(NSInteger, PetState) {
-    PetIdle, PetRap, PetSinging, PetReview, PetWaiting, PetFailed,
+    PetIdle, PetRap, PetSinging, PetWaving, PetJumping, PetReview, PetWaiting, PetFailed,
     PetGaze, PetRunningRight, PetRunningLeft, PetAngry
 };
 
@@ -144,6 +144,8 @@ typedef NS_ENUM(NSInteger, PetState) {
     switch (self.state) {
         case PetIdle: return self.frame;
         case PetRap: case PetSinging: return 4 * Columns + self.frame;
+        case PetWaving: return 3 * Columns + self.frame;
+        case PetJumping: return 4 * Columns + self.frame;
         case PetFailed: return 5 * Columns + self.frame;
         case PetWaiting: return 6 * Columns + self.frame;
         case PetReview: return 8 * Columns + self.frame;
@@ -159,6 +161,8 @@ typedef NS_ENUM(NSInteger, PetState) {
         case PetIdle: return 6;
         case PetRap: return 5;
         case PetSinging: return 5;
+        case PetWaving: return 4;
+        case PetJumping: return 5;
         case PetWaiting: case PetReview: case PetAngry: return 6;
         case PetFailed: return 8;
         case PetRunningRight: case PetRunningLeft: return 8;
@@ -179,10 +183,10 @@ typedef NS_ENUM(NSInteger, PetState) {
     [self.view setNeedsDisplay:YES];
 }
 - (BOOL)isIdleSequenceState:(PetState)state {
-    return state == PetSinging || state == PetReview || state == PetWaiting || state == PetFailed;
+    return state == PetWaving || state == PetJumping || state == PetReview || state == PetFailed;
 }
 - (void)startNextIdleSequenceAction {
-    NSArray *sequence = @[@(PetSinging), @(PetWaiting), @(PetFailed)];
+    NSArray *sequence = @[@(PetWaving), @(PetJumping), @(PetReview), @(PetFailed)];
     if (self.idleSequenceIndex >= sequence.count) {
         [self enterIdle];
         return;
@@ -311,7 +315,12 @@ typedef NS_ENUM(NSInteger, PetState) {
     self.dragging = NO;
     self.dragSeconds += [self now] - self.dragStarted;
     if (self.state == PetRunningRight || self.state == PetRunningLeft) {
-        if (self.dragSeconds > 7.0) { self.dragSeconds = 0; self.angerAfterAction = YES; }
+        if (self.dragSeconds > 7.0) {
+            self.dragSeconds = 0;
+            self.idleSequenceIndex = 4;
+            [self startState:PetFailed];
+            return;
+        }
         [self finishAction];
     }
 }
