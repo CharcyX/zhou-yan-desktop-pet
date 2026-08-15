@@ -15,7 +15,7 @@ static const CGFloat DockGap = -70.0;
 
 typedef NS_ENUM(NSInteger, PetState) {
     PetIdle, PetRap, PetSinging, PetWaving, PetJumping, PetReview, PetWaiting, PetFailed,
-    PetGaze, PetRunningRight, PetRunningLeft, PetAngry
+    PetGaze, PetRunningRight, PetRunningLeft, PetRunning, PetAngry
 };
 
 @class PetController;
@@ -152,6 +152,7 @@ typedef NS_ENUM(NSInteger, PetState) {
         case PetReview: return 8 * Columns + self.frame;
         case PetRunningRight: return 1 * Columns + self.frame;
         case PetRunningLeft: return 2 * Columns + self.frame;
+        case PetRunning: return 7 * Columns + self.frame;
         case PetAngry: return 7 * Columns + self.frame;
         case PetGaze: return self.frame < 8 ? 9 * Columns + self.frame : 10 * Columns + self.frame - 8;
     }
@@ -167,6 +168,7 @@ typedef NS_ENUM(NSInteger, PetState) {
         case PetWaiting: case PetReview: case PetAngry: return 6;
         case PetFailed: return 8;
         case PetRunningRight: case PetRunningLeft: return 8;
+        case PetRunning: return 6;
         case PetGaze: return 1;
     }
 }
@@ -186,14 +188,14 @@ typedef NS_ENUM(NSInteger, PetState) {
     [self.view setNeedsDisplay:YES];
 }
 - (BOOL)isIdleSequenceState:(PetState)state {
-    return state == PetJumping || state == PetReview || state == PetRunningRight || state == PetFailed;
+    return state == PetJumping || state == PetReview || state == PetRunning || state == PetFailed;
 }
 - (void)startFixedSequenceState:(PetState)state {
     [self startState:state];
     self.fixedSequenceAction = YES;
 }
 - (void)startNextIdleSequenceAction {
-    NSArray *sequence = @[@(PetJumping), @(PetReview), @(PetRunningRight), @(PetFailed)];
+    NSArray *sequence = @[@(PetJumping), @(PetReview), @(PetRunning), @(PetFailed)];
     if (self.idleSequenceIndex >= sequence.count) {
         [self enterIdle];
         return;

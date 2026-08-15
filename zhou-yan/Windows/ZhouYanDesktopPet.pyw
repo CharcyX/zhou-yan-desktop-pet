@@ -100,14 +100,14 @@ class ZhouYanPet:
         self.draw()
 
     def is_idle_sequence_state(self):
-        return self.state in ("jumping", "review", "running-right", "failed")
+        return self.state in ("jumping", "review", "running", "failed")
 
     def start_fixed_sequence_state(self, state):
         self.start(state)
         self.fixed_sequence_action = True
 
     def start_next_idle_action(self):
-        sequence = ("jumping", "review", "running-right", "failed")
+        sequence = ("jumping", "review", "running", "failed")
         if self.idle_sequence_index >= len(sequence):
             self.enter_idle()
             return
@@ -118,12 +118,13 @@ class ZhouYanPet:
     def frame_count(self):
         return {"idle": 6, "rap": 5, "singing": 5, "waving": 4, "jumping": 5, "waiting": 6,
                 "failed": 8, "review": 6, "gaze": 1,
-                "running-right": 8, "running-left": 8, "angry": 6}[self.state]
+                "running-right": 8, "running-left": 8, "running": 6, "angry": 6}[self.state]
 
     def atlas_index(self):
         if self.state == "idle": return self.frame
         if self.state == "running-right": return 8 + self.frame
         if self.state == "running-left": return 16 + self.frame
+        if self.state == "running": return 56 + self.frame
         if self.state in ("rap", "singing"): return 32 + self.frame
         if self.state == "waving": return 24 + self.frame
         if self.state == "jumping": return 32 + self.frame

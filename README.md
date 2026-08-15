@@ -15,7 +15,7 @@
 
 ## 独立版动作逻辑
 
-idle 完整循环 4 次后固定播放 jumping → review → running → failed，每个动作完整循环 2 次，然后回到 idle；悬停触发连续说唱，靠近但未悬停时触发 16 方向注视，左右拖拽即时切换跑步方向，拖拽累计超过 7 秒后触发 failed。固定序列中的 running 复用 running-right 帧，不移动窗口。
+idle 完整循环 4 次后固定播放 jumping → review → running → failed，每个动作完整循环 2 次，然后回到 idle；其中 running 使用低头思考动作，不移动窗口。悬停触发连续说唱，靠近但未悬停时触发 16 方向注视，左右拖拽即时切换跑步方向，拖拽累计超过 7 秒后触发 failed。
 
 ## 启动
 
