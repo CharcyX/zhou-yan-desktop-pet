@@ -41,6 +41,7 @@ typedef NS_ENUM(NSInteger, PetState) {
 @property(nonatomic) NSInteger idleSequenceIndex;
 @property(nonatomic) NSInteger actionLoopsCompleted;
 @property(nonatomic) BOOL fixedSequenceAction;
+@property(nonatomic) BOOL pendingSequenceTransition;
 @property(nonatomic) NSInteger hoverRapCount;
 @property(nonatomic) NSTimeInterval dragSeconds;
 @property(nonatomic) BOOL angerAfterAction;
@@ -188,6 +189,7 @@ typedef NS_ENUM(NSInteger, PetState) {
 - (void)startState:(PetState)state {
     self.state = state; self.frame = 0; self.actionFramesPlayed = 0; self.actionLoopsCompleted = 0; self.stateStarted = [self now];
     self.fixedSequenceAction = NO;
+    self.pendingSequenceTransition = NO;
     [self.view setNeedsDisplay:YES];
 }
 - (BOOL)isIdleSequenceState:(PetState)state {
@@ -282,17 +284,21 @@ typedef NS_ENUM(NSInteger, PetState) {
             [self.view setNeedsDisplay:YES];
         }
     } else if (self.state != PetGaze && now - self.stateStarted >= FrameStep) {
-        self.frame++;
-        self.actionFramesPlayed++;
-        self.stateStarted = now;
-        if (self.frame >= [self frameCount]) {
-            self.actionLoopsCompleted++;
-        }
-        self.frame = self.frame % [self frameCount];
-        if (self.fixedSequenceAction && [self isIdleSequenceState:self.state] && self.actionLoopsCompleted >= 2) {
+        if (self.pendingSequenceTransition) {
+            self.pendingSequenceTransition = NO;
             if (self.angerAfterAction) { self.angerAfterAction = NO; [self startState:PetAngry]; }
             else [self startNextIdleSequenceAction];
         } else {
+            self.frame++;
+            self.actionFramesPlayed++;
+            self.stateStarted = now;
+            if (self.frame >= [self frameCount]) {
+                self.actionLoopsCompleted++;
+            }
+            self.frame = self.frame % [self frameCount];
+            if (self.fixedSequenceAction && [self isIdleSequenceState:self.state] && self.actionLoopsCompleted >= 2) {
+                self.pendingSequenceTransition = YES;
+            }
             [self.view setNeedsDisplay:YES];
         }
     }
