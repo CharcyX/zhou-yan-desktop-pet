@@ -41,6 +41,7 @@ class ZhouYanPet:
         self.idle_sequence_index = 0
         self.action_loops_completed = 0
         self.fixed_sequence_action = False
+        self.pending_sequence_transition = False
         self.started = time.monotonic()
         self.hover_active = False
         self.hover_count = 0
@@ -99,6 +100,7 @@ class ZhouYanPet:
         self.action_loops_completed = 0
         self.started = time.monotonic()
         self.fixed_sequence_action = False
+        self.pending_sequence_transition = False
         self.draw()
 
     def is_idle_sequence_state(self):
@@ -126,7 +128,7 @@ class ZhouYanPet:
         if self.state == "idle": return self.frame
         if self.state == "running-right": return 8 + self.frame
         if self.state == "running-left": return 16 + self.frame
-        if self.state == "running": return 24 + self.frame
+        if self.state == "running": return 56 + self.frame
         if self.state in ("rap", "singing"): return 32 + self.frame
         if self.state == "waving": return 24 + self.frame
         if self.state == "jumping": return 32 + self.frame
@@ -218,19 +220,22 @@ class ZhouYanPet:
                 self.started = now
                 self.draw()
         elif self.state != "gaze" and now - self.started >= FRAME_STEP:
-            self.frame += 1
-            self.action_frames_played += 1
-            self.started = now
-            if self.frame >= self.frame_count():
-                self.action_loops_completed += 1
-            self.frame %= self.frame_count()
-            if self.fixed_sequence_action and self.is_idle_sequence_state() and self.action_loops_completed >= 2:
+            if self.pending_sequence_transition:
+                self.pending_sequence_transition = False
                 if self.anger_after_action:
                     self.anger_after_action = False
                     self.start("angry")
                 else:
                     self.start_next_idle_action()
             else:
+                self.frame += 1
+                self.action_frames_played += 1
+                self.started = now
+                if self.frame >= self.frame_count():
+                    self.action_loops_completed += 1
+                self.frame %= self.frame_count()
+                if self.fixed_sequence_action and self.is_idle_sequence_state() and self.action_loops_completed >= 2:
+                    self.pending_sequence_transition = True
                 self.draw()
         self.root.after(66, self.tick)
 

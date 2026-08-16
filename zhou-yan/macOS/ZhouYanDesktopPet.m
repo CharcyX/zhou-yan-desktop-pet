@@ -41,6 +41,7 @@ typedef NS_ENUM(NSInteger, PetState) {
 @property(nonatomic) NSInteger idleSequenceIndex;
 @property(nonatomic) NSInteger actionLoopsCompleted;
 @property(nonatomic) BOOL fixedSequenceAction;
+@property(nonatomic) BOOL pendingSequenceTransition;
 @property(nonatomic) NSInteger hoverRapCount;
 @property(nonatomic) NSTimeInterval dragSeconds;
 @property(nonatomic) BOOL angerAfterAction;
@@ -155,7 +156,7 @@ typedef NS_ENUM(NSInteger, PetState) {
         case PetReview: return 8 * Columns + self.frame;
         case PetRunningRight: return 1 * Columns + self.frame;
         case PetRunningLeft: return 2 * Columns + self.frame;
-        case PetRunning: return 3 * Columns + self.frame;
+        case PetRunning: return 7 * Columns + self.frame;
         case PetAngry: return 7 * Columns + self.frame;
         case PetGaze: return self.frame < 8 ? 9 * Columns + self.frame : 10 * Columns + self.frame - 8;
     }
@@ -188,6 +189,7 @@ typedef NS_ENUM(NSInteger, PetState) {
 - (void)startState:(PetState)state {
     self.state = state; self.frame = 0; self.actionFramesPlayed = 0; self.actionLoopsCompleted = 0; self.stateStarted = [self now];
     self.fixedSequenceAction = NO;
+    self.pendingSequenceTransition = NO;
     [self.view setNeedsDisplay:YES];
 }
 - (BOOL)isIdleSequenceState:(PetState)state {
@@ -282,17 +284,21 @@ typedef NS_ENUM(NSInteger, PetState) {
             [self.view setNeedsDisplay:YES];
         }
     } else if (self.state != PetGaze && now - self.stateStarted >= FrameStep) {
-        self.frame++;
-        self.actionFramesPlayed++;
-        self.stateStarted = now;
-        if (self.frame >= [self frameCount]) {
-            self.actionLoopsCompleted++;
-        }
-        self.frame = self.frame % [self frameCount];
-        if (self.fixedSequenceAction && [self isIdleSequenceState:self.state] && self.actionLoopsCompleted >= 2) {
+        if (self.pendingSequenceTransition) {
+            self.pendingSequenceTransition = NO;
             if (self.angerAfterAction) { self.angerAfterAction = NO; [self startState:PetAngry]; }
             else [self startNextIdleSequenceAction];
         } else {
+            self.frame++;
+            self.actionFramesPlayed++;
+            self.stateStarted = now;
+            if (self.frame >= [self frameCount]) {
+                self.actionLoopsCompleted++;
+            }
+            self.frame = self.frame % [self frameCount];
+            if (self.fixedSequenceAction && [self isIdleSequenceState:self.state] && self.actionLoopsCompleted >= 2) {
+                self.pendingSequenceTransition = YES;
+            }
             [self.view setNeedsDisplay:YES];
         }
     }
