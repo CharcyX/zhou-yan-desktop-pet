@@ -1,24 +1,24 @@
 # Zhou Yan Desktop Pet
 
-周延独立桌宠资产，单独提供 Codex、macOS 和 Windows 版本。
+周延独立桌宠资产，提供 Codex v2、macOS Universal 与 Windows 版本。
 
-## 版本
+## 交互
 
-- `zhou-yan/codex-pet/`：Codex v2 资产。
-- `zhou-yan/macOS/`：macOS 通用版应用、源码和资源。
-- `zhou-yan/Windows/`：Windows 桌宠、启动文件和资源。
+独立版的状态机和 GAI 桌宠一致：
+
+- 待机完整循环 6 次后，按说话 → 等待 → 失败顺序播放，每个动作完整循环 3 次后回到待机。
+- 鼠标悬停时循环播放 P1 说话动作；每第 3 次独立悬停，在悬停动作结束后追加一次失败反应。
+- 鼠标位于角色外、距离不超过 60 px 时播放对应的 16 向注视；超过 60 px 返回待机。
+- 左键拖动按水平移动方向播放跑步；累计拖动超过 7 秒后，在拖动结束时播放一次失败反应。
+- 窗口启动在屏幕右下角、Dock/任务栏上方；右键退出，Windows 也可按 Esc 退出。
+
+Windows 使用独立纯色键 RGB 图集，将 alpha 阈值化为硬边掩模，避免半透明像素与洋红背景混色产生紫边。macOS 和 Codex 保留透明 RGBA 图集。
+
+## 目录
+
+- `zhou-yan/codex-pet/`：Codex v2 图集。
+- `zhou-yan/macOS/`：Universal App、源码、构建脚本和 RGBA 图集。
+- `zhou-yan/Windows/`：Python 3 + Tk 桌宠、纯色键图集和启动脚本。
 - `releases/`：macOS 与 Windows 压缩包。
 
-## Codex 说明
-
-周延保持与 GAI 一致的 2.5 头身比例。Codex 图集加入关键帧保持以降低跳帧感；需要授权使用 waiting，思考使用 failed，failed 使用 waving。Codex 图集为独立资产，不修改 GAI 宠物。
-
-## 独立版动作逻辑
-
-idle 完整循环 4 次后固定播放 jumping → review → running → failed，每个动作完整循环 2 次，然后回到 idle；其中 running 使用低头思考动作，不移动窗口。悬停触发连续说唱，靠近但未悬停时触发 16 方向注视，左右拖拽即时切换跑步方向，拖拽累计超过 7 秒后触发 failed。
-
-## 启动
-
-- macOS：双击 `zhou-yan/macOS/ZhouYanDesktopPet.app`。
-- Windows：安装 Python 3 后双击 `zhou-yan/Windows/start-zhou-yan.bat`。
-- Codex：将 `zhou-yan/codex-pet/` 中的文件放入 Codex 的 `pets/zhou-yan/` 目录后重启 Codex。
+Windows 需要安装 Python 3；只使用 Python 自带 Tk，不需要 pip 包。

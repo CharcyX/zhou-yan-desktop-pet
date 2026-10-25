@@ -7,16 +7,15 @@ static const CGFloat WindowW = CellW * PetScale;
 static const CGFloat WindowH = CellH * PetScale;
 static const NSInteger Columns = 8;
 static const NSInteger Rows = 11;
-static const NSTimeInterval FrameStep = 0.20;
-static const NSTimeInterval IdleFrameStep = 0.22;
+static const NSTimeInterval FrameStep = 0.14;
 static const CGFloat GazeMargin = 60.0;
 static const CGFloat GazeAnchorY = 0.73;
 static const CGFloat GazeHysteresis = 4.0;
 static const CGFloat DockGap = -70.0;
 
 typedef NS_ENUM(NSInteger, PetState) {
-    PetIdle, PetRap, PetSinging, PetWaving, PetJumping, PetReview, PetWaiting, PetFailed,
-    PetGaze, PetRunningRight, PetRunningLeft, PetRunning, PetAngry
+    PetIdle, PetRap, PetSinging, PetReview, PetWaiting, PetFailed,
+    PetGaze, PetRunningRight, PetRunningLeft, PetAngry
 };
 
 @class PetController;
@@ -40,8 +39,6 @@ typedef NS_ENUM(NSInteger, PetState) {
 @property(nonatomic) NSInteger idleLoopsCompleted;
 @property(nonatomic) NSInteger idleSequenceIndex;
 @property(nonatomic) NSInteger actionLoopsCompleted;
-@property(nonatomic) BOOL fixedSequenceAction;
-@property(nonatomic) BOOL pendingSequenceTransition;
 @property(nonatomic) NSInteger hoverRapCount;
 @property(nonatomic) NSTimeInterval dragSeconds;
 @property(nonatomic) BOOL angerAfterAction;
@@ -147,70 +144,61 @@ typedef NS_ENUM(NSInteger, PetState) {
 
 - (NSInteger)atlasIndex {
     switch (self.state) {
-        case PetIdle: return self.frame;
-        case PetRap: case PetSinging: return 4 * Columns + self.frame;
-        case PetWaving: return 3 * Columns + self.frame;
-        case PetJumping: return 4 * Columns + self.frame;
-        case PetFailed: return 5 * Columns + self.frame;
+        case PetIdle: return 0 * Columns + self.frame;
+        case PetRap: return 4 * Columns + self.frame;
+        case PetSinging: return 4 * Columns + self.frame;
         case PetWaiting: return 6 * Columns + self.frame;
+        case PetFailed: return 5 * Columns + self.frame;
         case PetReview: return 8 * Columns + self.frame;
         case PetRunningRight: return 1 * Columns + self.frame;
         case PetRunningLeft: return 2 * Columns + self.frame;
-        case PetRunning: return 7 * Columns + self.frame;
-        case PetAngry: return 7 * Columns + self.frame;
+        case PetAngry: return 5 * Columns + self.frame;
         case PetGaze: return self.frame < 8 ? 9 * Columns + self.frame : 10 * Columns + self.frame - 8;
     }
+    return 0;
 }
-
 - (NSInteger)frameCount {
     switch (self.state) {
         case PetIdle: return 6;
         case PetRap: return 5;
         case PetSinging: return 5;
-        case PetWaving: return 4;
-        case PetJumping: return 5;
-        case PetWaiting: case PetReview: case PetAngry: return 6;
+        case PetWaiting: return 6;
         case PetFailed: return 8;
-        case PetRunningRight: case PetRunningLeft: return 8;
-        case PetRunning: return 6;
+        case PetReview: return 6;
+        case PetRunningRight: return 8;
+        case PetRunningLeft: return 8;
+        case PetAngry: return 8;
         case PetGaze: return 1;
     }
+    return 1;
 }
-
 - (NSTimeInterval)now { return NSDate.date.timeIntervalSince1970; }
 - (void)enterIdle {
     self.state = PetIdle; self.frame = 0; self.stateStarted = [self now];
     self.idleLoopsCompleted = 0;
     self.idleSequenceIndex = 0;
     self.actionLoopsCompleted = 0;
-    self.fixedSequenceAction = NO;
     [self.view setNeedsDisplay:YES];
 }
 - (void)startState:(PetState)state {
     self.state = state; self.frame = 0; self.actionFramesPlayed = 0; self.actionLoopsCompleted = 0; self.stateStarted = [self now];
-    self.fixedSequenceAction = NO;
-    self.pendingSequenceTransition = NO;
     [self.view setNeedsDisplay:YES];
 }
 - (BOOL)isIdleSequenceState:(PetState)state {
-    return state == PetJumping || state == PetReview || state == PetRunning || state == PetFailed;
-}
-- (void)startFixedSequenceState:(PetState)state {
-    [self startState:state];
-    self.fixedSequenceAction = YES;
+    return state == PetSinging || state == PetReview || state == PetWaiting || state == PetFailed;
 }
 - (void)startNextIdleSequenceAction {
-    NSArray *sequence = @[@(PetJumping), @(PetReview), @(PetRunning), @(PetFailed)];
+    NSArray *sequence = @[@(PetSinging), @(PetWaiting), @(PetFailed)];
     if (self.idleSequenceIndex >= sequence.count) {
         [self enterIdle];
         return;
     }
     PetState next = (PetState)[sequence[self.idleSequenceIndex] integerValue];
     self.idleSequenceIndex++;
-    [self startFixedSequenceState:next];
+    [self startState:next];
 }
 - (void)finishAction {
-    if (self.angerAfterAction) { self.angerAfterAction = NO; [self startState:PetAngry]; }
+    if (self.angerAfterAction) { self.angerAfterAction = NO; [self startState:PetFailed]; }
     else [self enterIdle];
 }
 - (CGFloat)outsideDistanceForPoint:(NSPoint)point rect:(NSRect)rect {
@@ -264,14 +252,14 @@ typedef NS_ENUM(NSInteger, PetState) {
     }
 
     if (self.state == PetIdle) {
-        if (now - self.stateStarted >= IdleFrameStep) {
+        if (now - self.stateStarted >= 0.18) {
             self.frame++;
             if (self.frame >= [self frameCount]) {
                 self.frame = 0;
                 self.idleLoopsCompleted++;
             }
             self.stateStarted = now;
-            if (self.idleLoopsCompleted >= 4 && outsideDistance > GazeMargin) {
+            if (self.idleLoopsCompleted >= 6 && outsideDistance > GazeMargin) {
                 [self startNextIdleSequenceAction];
             } else {
                 [self.view setNeedsDisplay:YES];
@@ -284,21 +272,17 @@ typedef NS_ENUM(NSInteger, PetState) {
             [self.view setNeedsDisplay:YES];
         }
     } else if (self.state != PetGaze && now - self.stateStarted >= FrameStep) {
-        if (self.pendingSequenceTransition) {
-            self.pendingSequenceTransition = NO;
-            if (self.angerAfterAction) { self.angerAfterAction = NO; [self startState:PetAngry]; }
+        self.frame++;
+        self.actionFramesPlayed++;
+        self.stateStarted = now;
+        if (self.frame >= [self frameCount]) {
+            self.actionLoopsCompleted++;
+        }
+        self.frame = self.frame % [self frameCount];
+        if ([self isIdleSequenceState:self.state] && self.actionLoopsCompleted >= 3) {
+            if (self.angerAfterAction) { self.angerAfterAction = NO; [self startState:PetFailed]; }
             else [self startNextIdleSequenceAction];
         } else {
-            self.frame++;
-            self.actionFramesPlayed++;
-            self.stateStarted = now;
-            if (self.frame >= [self frameCount]) {
-                self.actionLoopsCompleted++;
-            }
-            self.frame = self.frame % [self frameCount];
-            if (self.fixedSequenceAction && [self isIdleSequenceState:self.state] && self.actionLoopsCompleted >= 2) {
-                self.pendingSequenceTransition = YES;
-            }
             [self.view setNeedsDisplay:YES];
         }
     }
@@ -333,12 +317,7 @@ typedef NS_ENUM(NSInteger, PetState) {
     self.dragging = NO;
     self.dragSeconds += [self now] - self.dragStarted;
     if (self.state == PetRunningRight || self.state == PetRunningLeft) {
-        if (self.dragSeconds > 7.0) {
-            self.dragSeconds = 0;
-            self.idleSequenceIndex = 4;
-            [self startFixedSequenceState:PetFailed];
-            return;
-        }
+        if (self.dragSeconds > 7.0) { self.dragSeconds = 0; self.angerAfterAction = YES; }
         [self finishAction];
     }
 }

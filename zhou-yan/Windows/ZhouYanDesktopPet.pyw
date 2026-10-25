@@ -12,9 +12,11 @@ GAZE_MARGIN = 60
 GAZE_ANCHOR_Y = 0.30
 GAZE_HYSTERESIS = 4.0
 KEY = "#D12AFF"
-FRAME_STEP = 0.20
-IDLE_FRAME_STEP = 0.22
 
+
+STATE_ROWS = {'idle': 0, 'running-right': 1, 'running-left': 2, 'waving': 3, 'rap': 4, 'angry': 5, 'failed': 5, 'waiting': 6, 'singing': 4, 'review': 8}
+STATE_COUNTS = {'idle': 6, 'running-right': 8, 'running-left': 8, 'rap': 5, 'angry': 8, 'singing': 5, 'waiting': 6, 'failed': 8, 'review': 6}
+ESCALATION_STATE = 'failed'
 
 class ZhouYanPet:
     def __init__(self, root, atlas_path):
@@ -23,7 +25,7 @@ class ZhouYanPet:
         root.attributes("-topmost", True)
         root.configure(bg=KEY)
         # Windows removes this key color from the borderless window, leaving
-        # the RGBA sprite visible without a magenta rectangle behind it.
+        # the color-key sprite visible without a magenta rectangle behind it.
         try:
             root.wm_attributes("-transparentcolor", KEY)
         except tk.TclError:
@@ -40,8 +42,6 @@ class ZhouYanPet:
         self.idle_loops_completed = 0
         self.idle_sequence_index = 0
         self.action_loops_completed = 0
-        self.fixed_sequence_action = False
-        self.pending_sequence_transition = False
         self.started = time.monotonic()
         self.hover_active = False
         self.hover_count = 0
@@ -91,7 +91,6 @@ class ZhouYanPet:
         self.idle_loops_completed = 0
         self.idle_sequence_index = 0
         self.action_loops_completed = 0
-        self.fixed_sequence_action = False
         self.draw()
 
     def start(self, state):
@@ -99,45 +98,26 @@ class ZhouYanPet:
         self.action_frames_played = 0
         self.action_loops_completed = 0
         self.started = time.monotonic()
-        self.fixed_sequence_action = False
-        self.pending_sequence_transition = False
         self.draw()
 
     def is_idle_sequence_state(self):
-        return self.state in ("jumping", "review", "running", "failed")
-
-    def start_fixed_sequence_state(self, state):
-        self.start(state)
-        self.fixed_sequence_action = True
+        return self.state in ("singing", "review", "waiting", "failed")
 
     def start_next_idle_action(self):
-        sequence = ("jumping", "review", "running", "failed")
+        sequence = ("singing", "waiting", "failed")
         if self.idle_sequence_index >= len(sequence):
             self.enter_idle()
             return
         state = sequence[self.idle_sequence_index]
         self.idle_sequence_index += 1
-        self.start_fixed_sequence_state(state)
+        self.start(state)
 
     def frame_count(self):
-        return {"idle": 6, "rap": 5, "singing": 5, "waving": 4, "jumping": 5, "waiting": 6,
-                "failed": 8, "review": 6, "gaze": 1,
-                "running-right": 8, "running-left": 8, "running": 6, "angry": 6}[self.state]
+        return STATE_COUNTS[self.state]
 
     def atlas_index(self):
-        if self.state == "idle": return self.frame
-        if self.state == "running-right": return 8 + self.frame
-        if self.state == "running-left": return 16 + self.frame
-        if self.state == "running": return 56 + self.frame
-        if self.state in ("rap", "singing"): return 32 + self.frame
-        if self.state == "waving": return 24 + self.frame
-        if self.state == "jumping": return 32 + self.frame
-        if self.state == "failed": return 40 + self.frame
-        if self.state == "waiting": return 48 + self.frame
-        if self.state == "angry": return 56 + self.frame
-        if self.state == "review": return 64 + self.frame
-        if self.state == "gaze": return (72 + self.frame) if self.frame < 8 else (80 + self.frame - 8)
-        return 0
+        return STATE_ROWS[self.state] * COLS + self.frame if self.state != "gaze" else \
+            ((9 * COLS + self.frame) if self.frame < 8 else (10 * COLS + self.frame - 8))
 
     def draw(self):
         idx = self.atlas_index()
@@ -168,7 +148,7 @@ class ZhouYanPet:
     def finish_action(self):
         if self.anger_after_action:
             self.anger_after_action = False
-            self.start("angry")
+            self.start(ESCALATION_STATE)
         else:
             self.enter_idle()
 
@@ -204,38 +184,35 @@ class ZhouYanPet:
                 self.enter_idle()
 
         if self.state == "idle":
-            if now - self.started >= IDLE_FRAME_STEP:
+            if now - self.started >= 0.18:
                 self.frame += 1
                 if self.frame >= self.frame_count():
                     self.frame = 0
                     self.idle_loops_completed += 1
                 self.started = now
-                if self.idle_loops_completed >= 4 and distance > GAZE_MARGIN:
+                if self.idle_loops_completed >= 6 and distance > GAZE_MARGIN:
                     self.start_next_idle_action()
                 else:
                     self.draw()
-        elif self.state == "rap" and now - self.started >= FRAME_STEP:
+        elif self.state == "rap" and now - self.started >= 0.14:
             if inside and not self.dragging:
                 self.frame = (self.frame + 1) % self.frame_count()
                 self.started = now
                 self.draw()
-        elif self.state != "gaze" and now - self.started >= FRAME_STEP:
-            if self.pending_sequence_transition:
-                self.pending_sequence_transition = False
+        elif self.state != "gaze" and now - self.started >= 0.14:
+            self.frame += 1
+            self.action_frames_played += 1
+            self.started = now
+            if self.frame >= self.frame_count():
+                self.action_loops_completed += 1
+            self.frame %= self.frame_count()
+            if self.is_idle_sequence_state() and self.action_loops_completed >= 3:
                 if self.anger_after_action:
                     self.anger_after_action = False
-                    self.start("angry")
+                    self.start(ESCALATION_STATE)
                 else:
                     self.start_next_idle_action()
             else:
-                self.frame += 1
-                self.action_frames_played += 1
-                self.started = now
-                if self.frame >= self.frame_count():
-                    self.action_loops_completed += 1
-                self.frame %= self.frame_count()
-                if self.fixed_sequence_action and self.is_idle_sequence_state() and self.action_loops_completed >= 2:
-                    self.pending_sequence_transition = True
                 self.draw()
         self.root.after(66, self.tick)
 
@@ -268,9 +245,7 @@ class ZhouYanPet:
         if self.state in ("running-right", "running-left"):
             if self.drag_seconds > 7:
                 self.drag_seconds = 0
-                self.idle_sequence_index = 4
-                self.start_fixed_sequence_state("failed")
-                return
+                self.anger_after_action = True
             self.finish_action()
 
 

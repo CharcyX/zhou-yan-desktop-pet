@@ -1,0 +1,22 @@
+{
+  "source": "spritesheet-extended-neutral.png",
+  "output": "spritesheet.png",
+  "dimensions": [
+    1536,
+    2288
+  ],
+  "source_mode": "RGBA",
+  "windows_mode": "RGB",
+  "key_rgb": [
+    209,
+    42,
+    255
+  ],
+  "alpha_threshold": 128,
+  "source_alpha_values": "continuous RGBA; Windows export is hard cutout RGB",
+  "semi_transparent_output_pixels": 0,
+  "transparent_key_pixels": 2522472,
+  "opaque_foreground_pixels": 991896,
+  "near_key_foreground_pixels": 0,
+  "status": "pass"
+}
